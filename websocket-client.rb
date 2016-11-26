@@ -1,11 +1,10 @@
 require 'socket'
+require 'logger'
 require 'websocket'
-require 'looksee'
-
-hostname = 'waithook.herokuapp.com'
-port = 80
 
 class WebsocketClient
+
+  attr_accessor :logger
 
   class Waiter
     def wait
@@ -19,24 +18,67 @@ class WebsocketClient
   end
 
   def initialize(options = {})
-    # required: :host, :port, :path
-    options.merge({
-      ssl: false
-    })
+    # required: :host, :path
+
     @host = options[:host]
     @port = options[:port] || 80
     @path = options[:path]
+
+    @use_ssl = options.has_key?(:ssl) ? options[:ssl] : @port == 443
+    @options = options
+
     @waiters = []
+    @handshake_received = false
     @messages = Queue.new
+    @is_open = false
+
+    @output = options[:output] || STDOUT
+
+    if options[:logger]
+      @logger = options[:logger]
+    else
+      @logger = Logger.new(@output)
+      @logger.progname = self.class.name
+      @logger.formatter = proc do |serverity, time, progname, msg|
+        msg.lines.map do |line|
+          "#{progname} :: #{line}"
+        end.join("") + "\n"
+      end
+    end
   end
 
   def connect!
-    puts "Connecting to #{@host} #{@port}"
-    @socket = TCPSocket.open(@host, @port)
+    logger.info "Connecting to #{@host} #{@port}"
+
+    tcp_socket = TCPSocket.open(@host, @port)
+
+    if @use_ssl
+      require 'openssl'
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ssl_version = @options[:ssl_version] if @options[:ssl_version]
+      ctx.verify_mode = @options[:verify_mode] if @options[:verify_mode]
+      cert_store = OpenSSL::X509::Store.new
+      cert_store.set_default_paths
+      ctx.cert_store = cert_store
+      @socket = ::OpenSSL::SSL::SSLSocket.new(tcp_socket, ctx)
+      @socket.connect
+    else
+      @socket = tcp_socket
+    end
+
+    @is_open = true
     @handshake = WebSocket::Handshake::Client.new(url: "ws://#{@host}/#{@path}")
-    puts "Sending:\n#{@handshake}"
+
+    logger.debug "Sending handshake:\n#{@handshake}"
+
     @socket.print(@handshake)
     _start_parser!
+
+    self
+  end
+
+  def connected?
+    !!@is_open
   end
 
   def _start_parser!
@@ -44,13 +86,16 @@ class WebsocketClient
     @processing_thread = Thread.new do
       Thread.current.abort_on_exception = true
       begin
-        puts "Start reading in thread"
-        @handshake << _wait_handshake_response
-        puts "Handshake received, version: #{@handshake.version}"
+        logger.debug "Start reading in thread"
+        handshake_response = _wait_handshake_response
+        @handshake << handshake_response
+        logger.debug "Handshake received:\n #{handshake_response}"
+
         @frame_parser = WebSocket::Frame::Incoming::Client.new
+        @handshake_received = true
         _wait_frames!
-      rescue => error
-        puts "#{error.class}: #{error.message}\n#{error.backtrace.join("\n")}"
+      rescue Object => error
+        logger.error "#{error.class}: #{error.message}\n#{error.backtrace.join("\n")}"
         raise error
       end
     end
@@ -68,6 +113,13 @@ class WebsocketClient
     _send_frame(:text, payload)
   end
 
+  def wait_handshake!
+    while !@handshake_received
+      sleep 0.001
+    end
+    self
+  end
+
   def wait_new_message
     waiter = Waiter.new
     @waiters << waiter
@@ -80,19 +132,18 @@ class WebsocketClient
 
   def _notify_waiters(type, payload)
     while waiter = @waiters.shift
-      p waiter
       waiter.notify([type, payload])
     end
   end
 
   def _send_frame(type, payload = nil)
+    wait_handshake!
     frame = WebSocket::Frame::Outgoing::Client.new(version: @handshake.version, data: payload, type: type)
-    puts "Sending #{frame.type} -- #{frame.data}"
+    logger.debug "Sending :#{frame.type} #{payload ? "DATA: #{frame.data}" : "(no data)"}"
     @socket.write(frame.to_s)
   end
 
   def _process_frame(message)
-    puts "Frame (#{message.type}): #{message}"
     if message.type == :ping
       send_pong!
     end
@@ -112,52 +163,29 @@ class WebsocketClient
   end
 
   def _wait_handshake_response
-    puts "Waiting handshake response"
+    logger.debug "Waiting handshake response"
     data = []
     while line = @socket.gets
       data << line
       if line == "\r\n"
-        puts "Done!"
         break
       end
     end
     data.join("")
   end
 
-  def close!
-    puts "Closing"
+  def close!(options = {send_close: true})
+    unless @is_open
+      logger.info "Already closed"
+      return false
+    end
+
+    logger.info "Disconnecting from #{@host} #{@port}"
     @processing_thread.kill
+    _send_frame(:close) if options[:send_close]
     @socket.close
+    @is_open = false
+
+    return true
   end
 end
-
-HOST = 'localhost'
-PORT = 3012
-#HOST = 'waithook.herokuapp.com'
-#PORT = 80
-
-client = WebsocketClient.new(host: HOST, port: PORT, path: 'test-ruby')
-
-client.connect!
-
-#while true
-  sleep 3
-  require 'open-uri'
-  open("http://#{HOST}:#{PORT}/test-ruby")
-  type, data = client.wait_message
-  p [type, data]
-  client.close!
-#end
-
-#socket = TCPSocket.open(hostname, port)
-#
-#request = WebSocket::Handshake::Client.new(url: 'ws://waithook.herokuapp.com/test-ruby')
-#puts request
-#
-#socket.print(request)
-#
-#while line = socket.gets
-#  puts line.chop
-#end
-#
-#socket.close
