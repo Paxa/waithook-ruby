@@ -1,59 +1,13 @@
-Encoding.default_internal = Encoding::UTF_8
-Encoding.default_external = Encoding::UTF_8
-
-gem 'excon'
-gem 'minitest-reporters'
-gem 'addressable'
-
-require './websocket-client'
-require 'excon'
-require 'json'
-require "minitest/autorun"
-require "minitest/reporters"
-require "addressable/uri"
-
-Minitest::Reporters.use!(
-  Minitest::Reporters::SpecReporter.new(color: true)
-)
-
-if ENV['SEQ']
-  puts "Set test_order == :alpha"
-  class Minitest::Test
-    def self.test_order
-     :alpha
-    end
-  end
-end
-
-# To support UTF-8 in path
-module WebSocket::Handshake
-  URI = Addressable::URI
-end
-
-HOST = 'localhost'
-PORT = 3012
-PATH = 'test-ruby'
-
-def POST(path, data = nil)
-  Excon.post("http://#{HOST}:#{PORT}/#{path}", body: data, uri_parser: Addressable::URI)
-end
-
-def GET(path)
-  Excon.get("http://#{HOST}:#{PORT}/#{path}", uri_parser: Addressable::URI)
-end
-
-def get_stats
-  JSON.parse(GET('@/stats').body)
-end
-
-def default_client
-  WebsocketClient.new(host: HOST, port: PORT, path: PATH, output: StringIO.new).connect!.wait_handshake!
-end
+require_relative 'test_helper'
 
 describe "Server" do
   after do
     @client.close! if @client && @client.connected?
     assert_equal(0, get_stats['total_listeners'])
+  end
+
+  def default_client
+    Waithook::WebsocketClient.new(host: HOST, port: PORT, path: PATH, output: StringIO.new).connect!.wait_handshake!
   end
 
   it "should remove connection on disconnect with close frame" do
@@ -150,7 +104,7 @@ describe "Server" do
   it "should support utf-8 paths" do
     skip "hyper not support it yet"
     path = "бум!!!"
-    @client = WebsocketClient.new(host: HOST, port: PORT, path: path, output: StringIO.new).connect!
+    @client = Waithook::WebsocketClient.new(host: HOST, port: PORT, path: path, output: StringIO.new).connect!
     @client.wait_handshake!
 
     response = POST(path, "test-body")

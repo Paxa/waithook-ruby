@@ -1,6 +1,7 @@
-require_relative './websocket-client'
 require 'net/http'
 require 'json'
+
+require_relative 'waithook/websocket_client'
 
 class Waithook
 
@@ -70,6 +71,7 @@ class Waithook
         when "MOVE"   then Net::HTTP::Move
         when "COPY"   then Net::HTTP::Copy
         when "HEAD"   then Net::HTTP::Head
+        else Net::HTTP::Post
       end
 
       request = http_klass.new(uri)
@@ -81,7 +83,6 @@ class Waithook
         request.body = webhook.body
       end
 
-      p request
       response = http.request(request)
     end
 
@@ -91,7 +92,6 @@ class Waithook
   def wait_message
     while true
       type, data = @client.wait_message
-      puts "GOT #{type} #{data}"
       webhook = Webhook.new(data)
       if @filter && @filter.call(webhook) || !@filter
         @messages << webhook
@@ -101,7 +101,7 @@ class Waithook
   end
 
   def close!
-    @client.close
+    @client.close!
     @started = false
   end
 
@@ -126,12 +126,3 @@ class Waithook
     end
   end
 end
-
-=begin
-waithook = Waithook.subscribe('my-super-test') do |webhook|
-  webhook.json_body['order_id'] == 'my-testin-order'
-end
-
-backend_response = waithook.forward_to('http://localhost:3000/payment_notification')
-waithook.messages
-=end
