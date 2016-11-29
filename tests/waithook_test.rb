@@ -11,7 +11,7 @@ describe "Waithook" do
   end
 
   def default_client(options = {})
-    client = Waithook.subscribe(path: options[:path] || 'my-super-test', host: HOST, port: PORT, logger: false)
+    client = Waithook.subscribe({path: 'my-super-test', host: HOST, port: PORT, logger: false}.merge(options))
     @waithook_instances.push(client)
     client
   end
@@ -53,5 +53,21 @@ describe "Waithook" do
 
     assert_equal(message, webhook.json_body)
     assert_equal("POST", webhook.method)
+  end
+
+  it "should have trace log level" do
+    out, err = capture_io do
+      default_client(logger_level: :trace, logger: true)
+    end
+
+    assert_includes(out, 'Sec-WebSocket-Version')
+  end
+
+  it "should be more quiet generally" do
+    out, err = capture_io do
+      default_client(logger: true)
+    end
+
+    refute_includes(out, 'Sec-WebSocket-Version')
   end
 end

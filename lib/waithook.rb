@@ -46,6 +46,7 @@ class Waithook
       host: options[:host],
       port: options[:port],
       logger: options[:logger],
+      logger_level: options[:logger_level],
       output: options[:output]
     )
 

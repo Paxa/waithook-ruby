@@ -1,6 +1,6 @@
 require 'socket'
-require 'logger'
 require 'websocket'
+require_relative 'logger_with_trace'
 
 class Waithook
   class WebsocketClient
@@ -33,22 +33,23 @@ class Waithook
       @messages = Queue.new
       @is_open = false
 
-      @output = options[:output] || STDOUT
+      @output = options[:output] || $stdout
 
       if options[:logger] === false
         @output = StringIO.new
       end
 
-      if options[:logger]
+      if options[:logger] && options[:logger] != true
         @logger = options[:logger]
       else
-        @logger = Logger.new(@output)
+        @logger = LoggerWithTrace.new(@output)
         @logger.progname = self.class.name
         @logger.formatter = proc do |serverity, time, progname, msg|
           msg.lines.map do |line|
             "#{progname} :: #{line}"
           end.join("") + "\n"
         end
+        @logger.level = options[:logger_level] || :info
       end
     end
 
@@ -74,7 +75,7 @@ class Waithook
       @is_open = true
       @handshake = WebSocket::Handshake::Client.new(url: "ws://#{@host}/#{@path}")
 
-      logger.debug "Sending handshake:\n#{@handshake}"
+      logger.trace "Sending handshake:\n#{@handshake}"
 
       @socket.print(@handshake)
       _start_parser!
@@ -94,7 +95,7 @@ class Waithook
           logger.debug "Start reading in thread"
           handshake_response = _wait_handshake_response
           @handshake << handshake_response
-          logger.debug "Handshake received:\n #{handshake_response}"
+          logger.trace "Handshake received:\n #{handshake_response}"
 
           @frame_parser = WebSocket::Frame::Incoming::Client.new
           @handshake_received = true
@@ -144,11 +145,13 @@ class Waithook
     def _send_frame(type, payload = nil)
       wait_handshake!
       frame = WebSocket::Frame::Outgoing::Client.new(version: @handshake.version, data: payload, type: type)
-      logger.debug "Sending :#{frame.type} #{payload ? "DATA: #{frame.data}" : "(no data)"}"
+      logger.trace "Sending :#{frame.type} #{payload ? "DATA: #{frame.data}" : "(no data)"}"
       @socket.write(frame.to_s)
     end
 
     def _process_frame(message)
+      logger.trace "Received :#{message.type} #{message.data ? "DATA: #{message.data}" : "(no data)"}"
+
       if message.type == :ping
         send_pong!
       end
