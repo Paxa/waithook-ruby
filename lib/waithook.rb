@@ -8,8 +8,8 @@ class Waithook
   SERVER_HOST = "waithook.herokuapp.com"
   SERVER_PORT = 443
 
-  def self.subscribe(path, options = {}, &block)
-    instance = new(path, options)
+  def self.subscribe(options = {}, &block)
+    instance = new(options)
     if block
       instance.filter = block
     end
@@ -17,23 +17,36 @@ class Waithook
     instance
   end
 
+  def self.default_path
+    @default_path
+  end
+ 
+  def self.default_path=(value)
+    @default_path = value
+  end
+
   attr_accessor :filter
   attr_accessor :messages
   attr_reader :client
 
-  def initialize(path, options = {})
+  def initialize(options = {})
     options = {
       host: SERVER_HOST,
       port: SERVER_PORT,
-      auto_connect: true
+      auto_connect: true,
+      path: self.class.default_path
     }.merge(options)
 
-    @path = path
+    if options[:path] == nil
+      raise ArgumentError, ":path is missing. Please add :path to options argument or set Waithook.default_path = 'foo'"
+    end
+
     @client = WebsocketClient.new(
-      path: path,
+      path: options[:path],
       host: options[:host],
       port: options[:port],
-      logger: options[:logger]
+      logger: options[:logger],
+      output: options[:output]
     )
 
     @messages = []
@@ -56,37 +69,7 @@ class Waithook
 
   def forward_to(url)
     webhook = wait_message
-
-    uri = URI.parse(url)
-    response = nil
-
-    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
-      http_klass = case webhook.method
-        when "GET"    then Net::HTTP::Get
-        when "POST"   then Net::HTTP::Post
-        when "PUT"    then Net::HTTP::Put
-        when "PATCH"  then Net::HTTP::Patch
-        when "HEAD"   then Net::HTTP::Head
-        when "DELETE" then Net::HTTP::Delete
-        when "MOVE"   then Net::HTTP::Move
-        when "COPY"   then Net::HTTP::Copy
-        when "HEAD"   then Net::HTTP::Head
-        else Net::HTTP::Post
-      end
-
-      request = http_klass.new(uri)
-      webhook.headers.each do |key, value|
-        request[key] = value
-      end
-
-      if webhook.body
-        request.body = webhook.body
-      end
-
-      response = http.request(request)
-    end
-
-    response
+    webhook.send_to(url)
   end
 
   def wait_message
@@ -123,6 +106,39 @@ class Waithook
       if @body
         @json_body ||= JSON.parse(@body)
       end
+    end
+
+    def send_to(url)
+      uri = URI.parse(url)
+      response = nil
+
+      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+        http_klass = case method
+          when "GET"    then Net::HTTP::Get
+          when "POST"   then Net::HTTP::Post
+          when "PUT"    then Net::HTTP::Put
+          when "PATCH"  then Net::HTTP::Patch
+          when "HEAD"   then Net::HTTP::Head
+          when "DELETE" then Net::HTTP::Delete
+          when "MOVE"   then Net::HTTP::Move
+          when "COPY"   then Net::HTTP::Copy
+          when "HEAD"   then Net::HTTP::Head
+          else Net::HTTP::Post
+        end
+
+        request = http_klass.new(uri)
+        headers.each do |key, value|
+          request[key] = value
+        end
+
+        if body
+          request.body = body
+        end
+
+        response = http.request(request)
+      end
+
+      response
     end
   end
 end

@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     waithook (0.1)
-      websocket (~> 1.2.3)
+      websocket (~> 1.2)
 
 GEM
   remote: https://rubygems.org/

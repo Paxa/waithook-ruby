@@ -11,7 +11,7 @@ describe "Waithook" do
   end
 
   def default_client(options = {})
-    client = Waithook.subscribe(options[:path] || 'my-super-test', host: HOST, port: PORT, logger: false)
+    client = Waithook.subscribe(path: options[:path] || 'my-super-test', host: HOST, port: PORT, logger: false)
     @waithook_instances.push(client)
     client
   end
