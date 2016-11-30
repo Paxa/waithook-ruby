@@ -79,7 +79,7 @@ describe "Waithook" do
 
   it "wait_message should return nil after timeout" do
     waithook = default_client
-    assert_equal(nil, waithook.wait_message(timeout: 0.1, raise_timeout_error: false))
+    assert_equal(nil, waithook.wait_message(timeout: 0.1, raise_on_timeout: false))
   end
 
   it "forward_to should raise exception after timeout" do
@@ -91,7 +91,7 @@ describe "Waithook" do
   it "forward_to should return nil after timeout" do
     out, err = capture_io do
       waithook = default_client(logger: true)
-      assert_equal(nil, waithook.forward_to('', timeout: 0.1, raise_timeout_error: false))
+      assert_equal(nil, waithook.forward_to('', timeout: 0.1, raise_on_timeout: false))
     end
 
     assert_includes(out, "Timeout::Error: execution expired")

@@ -85,7 +85,7 @@ class Waithook
   end
 
   def wait_message(options = {})
-    raise_timeout_error = options.has_key?(:raise_timeout_error) ? options[:raise_timeout_error] : true
+    raise_timeout_error = options.has_key?(:raise_on_timeout) ? options[:raise_on_timeout] : true
     timeout = options[:timeout] || @options[:timeout] || 0
 
     start_time = Time.new.to_f
