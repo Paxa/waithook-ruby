@@ -70,4 +70,30 @@ describe "Waithook" do
 
     refute_includes(out, 'Sec-WebSocket-Version')
   end
+
+  it "wait_message should raise exception after timeout" do
+    assert_raises(Timeout::Error) do
+      default_client.wait_message(timeout: 0.1)
+    end
+  end
+
+  it "wait_message should return nil after timeout" do
+    waithook = default_client
+    assert_equal(nil, waithook.wait_message(timeout: 0.1, raise_timeout_error: false))
+  end
+
+  it "forward_to should raise exception after timeout" do
+    assert_raises(Timeout::Error) do
+      default_client.forward_to('', timeout: 0.1)
+    end
+  end
+
+  it "forward_to should return nil after timeout" do
+    out, err = capture_io do
+      waithook = default_client(logger: true)
+      assert_equal(nil, waithook.forward_to('', timeout: 0.1, raise_timeout_error: false))
+    end
+
+    assert_includes(out, "Timeout::Error: execution expired")
+  end
 end

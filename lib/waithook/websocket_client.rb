@@ -1,5 +1,7 @@
 require 'socket'
 require 'websocket'
+require 'stringio'
+
 require_relative 'logger_with_trace'
 
 class Waithook
@@ -42,14 +44,10 @@ class Waithook
       if options[:logger] && options[:logger] != true
         @logger = options[:logger]
       else
-        @logger = LoggerWithTrace.new(@output)
-        @logger.progname = self.class.name
-        @logger.formatter = proc do |serverity, time, progname, msg|
-          msg.lines.map do |line|
-            "#{progname} :: #{line}"
-          end.join("") + "\n"
-        end
-        @logger.level = options[:logger_level] || :info
+        @logger = LoggerWithTrace.new(@output).setup(
+          progname: self.class.name,
+          level: options[:logger_level] || :info
+        )
       end
     end
 

@@ -1,6 +1,9 @@
 require 'net/http'
+require 'timeout'
 require 'json'
+require 'stringio'
 
+require_relative 'waithook/logger_with_trace'
 require_relative 'waithook/websocket_client'
 
 class Waithook
@@ -28,33 +31,41 @@ class Waithook
   attr_accessor :filter
   attr_accessor :messages
   attr_reader :client
+  attr_reader :options
 
   def initialize(options = {})
-    options = {
+    @options = {
       host: SERVER_HOST,
       port: SERVER_PORT,
       auto_connect: true,
       path: self.class.default_path
     }.merge(options)
 
-    if options[:path] == nil
+    if @options[:path] == nil
       raise ArgumentError, ":path is missing. Please add :path to options argument or set Waithook.default_path = 'foo'"
     end
 
     @client = WebsocketClient.new(
-      path: options[:path],
-      host: options[:host],
-      port: options[:port],
-      logger: options[:logger],
-      logger_level: options[:logger_level],
-      output: options[:output]
+      path: @options[:path],
+      host: @options[:host],
+      port: @options[:port],
+      logger: @options[:logger],
+      logger_level: @options[:logger_level],
+      output: @options[:output]
     )
 
     @messages = []
     @filter = nil
     @started = false
 
-    connect! if options[:auto_connect]
+    connect! if @options[:auto_connect]
+  end
+
+  def logger
+    @logger ||= LoggerWithTrace.new(@options[:logger] ? $stdout : StringIO.new).setup(
+      progname: self.class.name,
+      level: @options[:logger_level] || :info
+    )
   end
 
   def connect!
@@ -68,20 +79,31 @@ class Waithook
     !!@started
   end
 
-  def forward_to(url)
-    webhook = wait_message
-    webhook.send_to(url)
+  def forward_to(url, options = {})
+    webhook = wait_message(options)
+    webhook.send_to(url) unless webhook.nil?
   end
 
-  def wait_message
-    while true
-      type, data = @client.wait_message
-      webhook = Webhook.new(data)
-      if @filter && @filter.call(webhook) || !@filter
-        @messages << webhook
-        return webhook
+  def wait_message(options = {})
+    raise_timeout_error = options.has_key?(:raise_timeout_error) ? options[:raise_timeout_error] : true
+    timeout = options[:timeout] || @options[:timeout] || 0
+
+    start_time = Time.new.to_f
+    Timeout.timeout(timeout) do
+      while true
+        type, data = @client.wait_message
+        webhook = Webhook.new(data)
+        if @filter && @filter.call(webhook) || !@filter
+          @messages << webhook
+          return webhook
+        end
       end
     end
+  rescue Timeout::Error => error
+    time_diff = (Time.now.to_f - start_time).round(3)
+    logger.error "#{error.class}: #{error.message} (after #{time_diff} seconds)"
+    raise error if raise_timeout_error
+    return nil
   end
 
   def close!

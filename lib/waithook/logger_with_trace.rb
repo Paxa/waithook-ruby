@@ -34,4 +34,16 @@ class LoggerWithTrace < ::Logger
       end
     end
   end
+
+  def setup(options)
+    self.progname = options[:progname]
+    self.formatter = proc do |serverity, time, progname, msg|
+      msg.lines.map do |line|
+        "#{progname} :: #{line}"
+      end.join("") + "\n"
+    end
+    self.level = options[:level]
+
+    self
+  end
 end
