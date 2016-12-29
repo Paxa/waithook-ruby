@@ -2,3 +2,49 @@
 
 $:.push(File.expand_path("../../lib", __FILE__))
 
+require 'optparse'
+
+def help_message
+  [
+    "Waithook command line client.",
+    "",
+    "Example usage:",
+    "    waithook waithook.herokuapp.com/my_path",
+    "    waithook waithook.herokuapp.com/my_path --forward http://localhost:3000/notify"
+  ].join("\n")
+end
+
+options = {}
+
+begin
+  OptionParser.new do |opts|
+    opts.banner = help_message + "\nOptions:"
+
+    opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+      options[:verbose] = v
+    end
+    opts.on("-f URL", "--forward URL", "Forward to HTTP server") do |value|
+      options[:forward] = value
+    end
+  end.parse!
+rescue OptionParser::InvalidOption => error
+  require 'waithook'
+  puts Waithook::WithColor.red(error.message)
+  puts "Please use --help to list of arguments"
+  exit 1
+end
+
+begin
+  require 'waithook'
+  if ARGV.first
+    Waithook::CLI.listen(ARGV.first, options)
+  else
+    puts Waithook::WithColor.red("URL is required\n")
+    puts help_message
+    exit 1
+  end
+rescue Waithook::CLI::ArgError => error
+  puts Waithook::WithColor.red(error.message)
+  puts help_message
+  exit 1
+end

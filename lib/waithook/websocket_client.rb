@@ -31,6 +31,7 @@ class Waithook
       @options = options
 
       @waiters = []
+      @connect_waiters = []
       @handshake_received = false
       @messages = Queue.new
       @is_open = false
@@ -96,7 +97,7 @@ class Waithook
           logger.trace "Handshake received:\n #{handshake_response}"
 
           @frame_parser = WebSocket::Frame::Incoming::Client.new
-          @handshake_received = true
+          _handshake_recieved!
           _wait_frames!
         rescue Object => error
           logger.error "#{error.class}: #{error.message}\n#{error.backtrace.join("\n")}"
@@ -132,6 +133,20 @@ class Waithook
 
     def wait_message
       @messages.pop
+    end
+
+    def wait_connected
+      return true if @handshake_received
+      waiter = Waiter.new
+      @connect_waiters << waiter
+      waiter.wait
+    end
+
+    def _handshake_recieved!
+      @handshake_received = true
+      while waiter = @connect_waiters.shift
+        waiter.notify(true)
+      end
     end
 
     def _notify_waiters(type, payload)

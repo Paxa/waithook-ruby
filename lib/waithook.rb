@@ -1,10 +1,12 @@
 require 'net/http'
+require 'uri'
 require 'timeout'
 require 'json'
 require 'stringio'
 
 require_relative 'waithook/logger_with_trace'
 require_relative 'waithook/websocket_client'
+require_relative 'waithook/cli'
 
 class Waithook
 
@@ -116,9 +118,11 @@ class Waithook
     attr_reader :headers
     attr_reader :body
     attr_reader :method
+    attr_reader :message
 
     def initialize(payload)
-      data = JSON.parse(payload)
+      @message = payload
+      data = JSON.parse(@message)
       @url = data['url']
       @headers = data['headers']
       @body = data['body']
