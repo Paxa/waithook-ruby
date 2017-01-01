@@ -128,4 +128,32 @@ describe "Server" do
     assert_equal("test-data", message['body'])
     assert_equal("PUT", message['method'])
   end
+
+  it "should response with challenge value for slack type" do
+    @client = Waithook::WebsocketClient.new(host: HOST, port: PORT, path: PATH + "?type=slack", output: StringIO.new)
+      .connect!.wait_handshake!
+
+    message = {
+      token: "mJbhjRozbVxkrQmthcxndV0X",
+      challenge: "x39xHMiljI4m42XPO9jxui47fRvi0SMZhOlYI0SbFSzNSbQJItus",
+      type: "url_verification"
+    }
+    response = POST(PATH + "?type=slack", JSON.generate(message))
+    assert_equal(response.body, message[:challenge])
+  end
+
+  it "should response with OK for slack when not a json" do
+    response = POST(PATH + "?type=slack", "AAA")
+    assert_equal(response.body, "OK\n")
+  end
+
+  it "should response with OK for slack without challenge" do
+    response = POST(PATH + "?type=slack", "{}")
+    assert_equal(response.body, "OK\n")
+  end
+
+  it "should response with OK for slack when challenge isn't a string" do
+    response = POST(PATH + "?type=slack", '{"challenge": []}')
+    assert_equal(response.body, "OK\n")
+  end
 end

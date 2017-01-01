@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    waithook (0.1)
+    waithook (0.2)
       websocket (~> 1.2)
 
 GEM
