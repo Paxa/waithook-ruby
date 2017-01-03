@@ -1,11 +1,11 @@
 # Waithook ruby client
 
-A ruby client (Waithook)[https://waithook.herokuapp.com] service.
+A ruby client [Waithook](https://waithook.herokuapp.com) service.
 Wiathook is a service to transmit HTTP requests over websocket connection.
 It's kinda Pub/Sub system for HTTP notifications, built for recieving webhook notifications behind proxy or in condition when public IP is unknown (such as cloud CI server).
 
 
-To recieve notifications for your integration (payment provider, slack, github, any other service that send webhokos), you should add https://waithook.herokuapp.com/some_random_string as notification URL.
+To recieve notifications for your integration (payment provider, slack, github, any other service that send webhokos), you should add `https://waithook.herokuapp.com/some_random_string` as notification URL.
 
 ### Command line usage
 
