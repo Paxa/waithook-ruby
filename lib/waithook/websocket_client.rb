@@ -5,21 +5,48 @@ require 'stringio'
 require_relative 'logger_with_trace'
 
 class Waithook
+  # Simple websocket client, internally use websocket gem to construct and parse websocket messages
+  #
+  # Usage:
+  #
+  #   client = WebsocketClient.new(host: HOST, port: PORT, path: 'test-ruby')
+  #   client.send_ping!
+  #   client.send_message!("Hello, server")
+  #   type, data = client.wait_message # => type == :text, data is message content as a string
+  #
   class WebsocketClient
 
     attr_accessor :logger
 
+    # Waiter object, blocking current thread. Better abstraction for ruby's Queue utility class
+    #
+    #   message_waiter = Waiter.new
+    #   Thread.new { sleep 5; message_waiter.notify('Done!!!') }
+    #   message_waiter.wait # => return 'Done!!!' after 5 seconds pause
+    #
     class Waiter
+      # Waiting for someone to call #notify
       def wait
         @queue = Queue.new
         @queue.pop(false)
       end
 
+      # Notify waiting side
       def notify(data)
         @queue.push(data)
       end
     end
 
+    # Available options:
+    # * :host - hostname
+    # * :port - server port (default 80)
+    # * :path - HTTP path
+    # * :ssl  - true/false (will detect base on port if blank)
+    # * :ssl_version
+    # * :verify_mode
+    # * :logger_level - logger level, default :info
+    # * :output - output stream for default logger. If value == false then it will be silent, default is $stdout
+    # * :logger - custom logger object
     def initialize(options = {})
       # required: :host, :path
 
@@ -52,6 +79,7 @@ class Waithook
       end
     end
 
+    # Estabilish connection to server and send initial handshake
     def connect!
       logger.info "Connecting to #{@host} #{@port}"
 
@@ -82,6 +110,7 @@ class Waithook
       self
     end
 
+    # Return true/false
     def connected?
       !!@is_open
     end
@@ -106,41 +135,46 @@ class Waithook
       end
     end
 
+    # Send <tt>:ping</tt> message to server
     def send_ping!
       _send_frame(:ping)
     end
 
+    # Send <tt>:pong</tt> message to server, usually as a response to :ping message
     def send_pong!
       _send_frame(:pong)
     end
 
+    # Send message to server (type <tt>:text</tt>)
     def send_message!(payload)
       _send_frame(:text, payload)
     end
 
-    def wait_handshake!
-      while !@handshake_received
-        sleep 0.001
-      end
-      self
-    end
-
+    # Wait for new message (thread safe, all waiting threads will recieve a message)
+    # Message format [type, data], e.g. <tt>[:text, "hello world"]</tt>
     def wait_new_message
       waiter = Waiter.new
       @waiters << waiter
       waiter.wait
     end
 
+    # Synchroniously waiting for new message. Not thread safe, only one thread will receive message
+    # Message format [type, data], e.g. <tt>[:text, "hello world"]</tt>
     def wait_message
       @messages.pop
     end
 
-    def wait_connected
+    # Wait until server handshake recieved.
+    # Once it's recieved - we can are listening for new messages
+    # and connection is ready for sending data
+    def wait_handshake!
       return true if @handshake_received
       waiter = Waiter.new
       @connect_waiters << waiter
       waiter.wait
+      self
     end
+    alias_method :wait_connected, :wait_handshake!
 
     def _handshake_recieved!
       @handshake_received = true
@@ -195,6 +229,7 @@ class Waithook
       data.join("")
     end
 
+    # Send <tt>:close</tt> message to socket and close socket connection
     def close!(options = {send_close: true})
       unless @is_open
         logger.info "Already closed"

@@ -1,5 +1,5 @@
 class Waithook
-  module WithColor
+  module WithColor #:nodoc:
     extend self
     def black(s);   "\033[30m#{s}\033[0m" end
     def red(s);     "\033[31m#{s}\033[0m" end
@@ -13,8 +13,8 @@ class Waithook
     def bold(s);    "\e[1m#{s}\e[m"       end
   end
 
-  module CLI
-    class ArgError < ArgumentError; end
+  module CLI #:nodoc:
+    class ArgError < ArgumentError; end #:nodoc:
 
     extend self
 

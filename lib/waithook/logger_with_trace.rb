@@ -1,8 +1,8 @@
 require 'logger'
 
 # Just add trace level
-class LoggerWithTrace < ::Logger
-  module Severity
+class LoggerWithTrace < ::Logger #:nodoc:
+  module Severity #:nodoc:
     include ::Logger::Severity
     TRACE = -1
   end
