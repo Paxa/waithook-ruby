@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.email       = ["pavel.evst@gmail.com"]
   s.homepage    = "https://github.com/paxa/waithook-ruby"
   s.summary     = %q{HTTP to WebSocket transmitting client}
-  s.description = "Waithook gem is client lib for waithook service https://waithook.heroku.com"
+  s.description = "Waithook gem is client lib for waithook service http://waithook.com"
   s.license     = 'MIT'
   s.required_ruby_version = '~> 2.0'
 

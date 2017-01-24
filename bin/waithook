@@ -9,8 +9,8 @@ def help_message
     "Waithook command line client.",
     "",
     "Example usage:",
-    "    waithook waithook.herokuapp.com/my_path",
-    "    waithook waithook.herokuapp.com/my_path --forward http://localhost:3000/notify"
+    "    waithook waithook.com/my_path",
+    "    waithook waithook.com/my_path --forward http://localhost:3000/notify"
   ].join("\n")
 end
 

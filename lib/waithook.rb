@@ -11,9 +11,9 @@ require_relative 'waithook/cli'
 class Waithook
 
   # Default server host
-  SERVER_HOST = "waithook.herokuapp.com"
+  SERVER_HOST = "waithook.com"
   # Default server port
-  SERVER_PORT = 443
+  SERVER_PORT = 80
 
   # Connect to server and start filter incoming messages (optionally)
   #

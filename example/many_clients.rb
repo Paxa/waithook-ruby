@@ -7,7 +7,7 @@ require './websocket-client'
 
 HOST = 'localhost'
 PORT = 3012
-#HOST = 'waithook.herokuapp.com'
+#HOST = 'waithook.com'
 #PORT = 80
 
 threads_num = ENV['THREADS'] ? ENV['THREADS'].to_i : 10

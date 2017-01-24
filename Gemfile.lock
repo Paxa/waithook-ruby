@@ -10,16 +10,16 @@ GEM
     addressable (2.5.0)
       public_suffix (~> 2.0, >= 2.0.2)
     ansi (1.5.0)
-    builder (3.2.2)
+    builder (3.2.3)
     excon (0.54.0)
-    minitest (5.9.1)
-    minitest-reporters (1.1.12)
+    minitest (5.10.1)
+    minitest-reporters (1.1.14)
       ansi
       builder
       minitest (>= 5.0)
       ruby-progressbar
-    public_suffix (2.0.4)
-    rake (11.3.0)
+    public_suffix (2.0.5)
+    rake (12.0.0)
     ruby-progressbar (1.8.1)
     websocket (1.2.3)
 
@@ -34,4 +34,4 @@ DEPENDENCIES
   waithook!
 
 BUNDLED WITH
-   1.13.6
+   1.14.2

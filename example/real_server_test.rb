@@ -5,8 +5,8 @@ require './websocket-client'
 
 #HOST = 'localhost'
 #PORT = 3012
-HOST = 'waithook.herokuapp.com'
-PORT = 443
+HOST = 'waithook.com'
+PORT = 80
 
 client = WebsocketClient.new(host: HOST, port: PORT, path: 'test-ruby').connect!.wait_handshake!
 

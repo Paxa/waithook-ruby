@@ -100,7 +100,7 @@ class Waithook
       end
 
       @is_open = true
-      @handshake = WebSocket::Handshake::Client.new(url: "ws://#{@host}/#{@path}")
+      @handshake = WebSocket::Handshake::Client.new(url: "ws://#{@host}/#{@path.to_s.sub(/^\//, '')}")
 
       logger.trace "Sending handshake:\n#{@handshake}"
 

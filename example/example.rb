@@ -5,7 +5,7 @@ require './websocket-client'
 
 HOST = 'localhost'
 PORT = 3012
-#HOST = 'waithook.herokuapp.com'
+#HOST = 'waithook.com'
 #PORT = 80
 
 client = WebsocketClient.new(host: HOST, port: PORT, path: 'test-ruby')
@@ -42,7 +42,7 @@ end
 
 #socket = TCPSocket.open(hostname, port)
 #
-#request = WebSocket::Handshake::Client.new(url: 'ws://waithook.herokuapp.com/test-ruby')
+#request = WebSocket::Handshake::Client.new(url: 'ws://waithook.com/test-ruby')
 #puts request
 #
 #socket.print(request)
