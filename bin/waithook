@@ -26,6 +26,11 @@ begin
     opts.on("-f URL", "--forward URL", "Forward to HTTP server") do |value|
       options[:forward] = value
     end
+    opts.on("--version") do |value|
+      require 'waithook/version'
+      puts Waithook::VERSION
+      exit
+    end
   end.parse!
 rescue OptionParser::InvalidOption => error
   require 'waithook'

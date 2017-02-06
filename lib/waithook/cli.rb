@@ -44,7 +44,7 @@ class Waithook
           Thread.new do
             begin
               forward_url = if options[:forward].start_with?('http://', 'https://')
-                forward_url
+                options[:forward]
               else
                 "http://#{options[:forward]}"
               end
