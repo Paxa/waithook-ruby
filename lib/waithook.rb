@@ -131,7 +131,7 @@ class Waithook
     start_time = Time.new.to_f
     Timeout.timeout(timeout) do
       while true
-        type, data = @client.wait_message
+        _, data = @client.wait_message
         webhook = Webhook.new(data)
         if @filter && @filter.call(webhook) || !@filter
           @messages << webhook
@@ -202,7 +202,6 @@ class Waithook
           when "DELETE" then Net::HTTP::Delete
           when "MOVE"   then Net::HTTP::Move
           when "COPY"   then Net::HTTP::Copy
-          when "HEAD"   then Net::HTTP::Head
           else Net::HTTP::Post
         end
 
