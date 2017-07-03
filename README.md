@@ -27,6 +27,7 @@ waithook waithook.com/my_path --forward http://localhost:3000/notify
 ### Ruby API
 
 ```ruby
+Waithook.default_path = 'my-notification-endpoint' # or using ":path" option in Waithook.subscribe 
 waithook = Waithook.subscribe(timeout: 60, raise_on_timeout: true) do |webhook|
   webhook.json_body['order_id'] == order_id
 end
