@@ -15,12 +15,12 @@ gem install waithook
 ```
 
 Subscribe and print incoming requests:
-````sh
+```sh
 waithook waithook.com/my_path
 ```
 
 Subscribe and forvard to other web server:
-````sh
+```sh
 waithook waithook.com/my_path --forward http://localhost:3000/notify
 ```
 
@@ -34,7 +34,7 @@ end
 waithook.send_to("http://localhost:3000/notify")
 ```
 
-### Usage examples
+### When it can be used?
 
 * Testing integration with payment gateway
 * Testing github webhooks
@@ -42,5 +42,5 @@ waithook.send_to("http://localhost:3000/notify")
 * Testing slack bots
 * Testing facebook webhooks
 
-So waithook just help to deliver webhook to your application when public IP is unknown or not available. It can help when multiple developers testing integration with other service on localhost or your automated tests running in CI.
+Waithook service just help to deliver webhook to your application when public IP is unknown or not available. It can help when multiple developers testing integration with other service on localhost or your automated tests running in CI.
 
