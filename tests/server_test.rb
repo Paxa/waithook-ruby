@@ -69,7 +69,7 @@ describe "Server" do
   it "should serve index.html" do
     response = GET("")
 
-    assert_includes(response.body, "<html>")
+    assert_includes(response.body, "<html lang='en'>")
     assert_equal({
       "Connection"     => "close",
       "Content-Length" => response.headers["Content-Length"],
@@ -155,5 +155,29 @@ describe "Server" do
   it "should response with OK for slack when challenge isn't a string" do
     response = POST(PATH + "?type=slack", '{"challenge": []}')
     assert_equal(response.body, "OK\n")
+  end
+
+  it "should response with custom body" do
+    response = POST(PATH + "?resp=foo", "AAA")
+    assert_equal(response.body, "foo")
+    assert_equal(response.headers['Content-Type'], "text/plain")
+  end
+
+  it "should response with custom content type" do
+    response = POST(PATH + "?resp=foo&resp_type=text/csv", "AAA")
+    assert_equal(response.body, "foo")
+    assert_equal(response.headers['Content-Type'], "text/csv")
+  end
+
+  it "should support shortcuts for resp_type" do
+    shortcuts = {
+      json: "application/json",
+      xml: "application/xml",
+      html: "text/html"
+    }
+    shortcuts.each do |short, long|
+      response = POST(PATH + "?resp=foo&resp_type=#{short}", "AAA")
+      assert_equal(response.headers['Content-Type'], long)
+    end
   end
 end
