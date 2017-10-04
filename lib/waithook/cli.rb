@@ -21,7 +21,7 @@ class Waithook
     def listen(url, options)
       puts "Run with options: #{options}" if options[:verbose]
       unless url.start_with?('ws://', 'wss://')
-        url = 'wss://' + url
+        url = 'ws://' + url
       end
 
       unless url =~ /\A#{URI::regexp(['ws', 'wss'])}\z/
