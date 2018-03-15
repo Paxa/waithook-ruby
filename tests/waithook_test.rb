@@ -79,7 +79,7 @@ describe "Waithook" do
 
   it "wait_message should return nil after timeout" do
     waithook = default_client
-    assert_equal(nil, waithook.wait_message(timeout: 0.1, raise_on_timeout: false))
+    assert_nil(waithook.wait_message(timeout: 0.1, raise_on_timeout: false))
   end
 
   it "forward_to should raise exception after timeout" do
