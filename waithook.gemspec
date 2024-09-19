@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.summary     = %q{HTTP to WebSocket transmitting client}
   s.description = "Waithook gem is client lib for waithook service http://waithook.com"
   s.license     = 'MIT'
-  s.required_ruby_version = '~> 2.0'
+  # s.required_ruby_version = '~> 2.0'
 
   s.files       = `git ls-files`.split("\n")
   s.test_files  = []
