@@ -39,7 +39,7 @@ class Waithook
 
       while true
         message = waithook.wait_message
-        puts message.message
+        puts message.pretty_print
         if options[:forward]
           Thread.new do
             begin

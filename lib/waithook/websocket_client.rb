@@ -199,12 +199,23 @@ class Waithook
     def _process_frame(message)
       logger.trace "Received :#{message.type} #{message.data ? "DATA: #{message.data}" : "(no data)"}"
 
+      if message.type == :pong
+        logger.debug "Got pong"
+      end
+
       if message.type == :ping
         send_pong!
       end
       if message.type == :text
         @messages.push([message.type, message.data])
         _notify_waiters(message.type, message.data)
+      end
+    end
+
+    def ping_sender(interval = 60)
+      while @is_open
+        send_ping!
+        sleep interval
       end
     end
 

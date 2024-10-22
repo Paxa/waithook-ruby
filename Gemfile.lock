@@ -1,27 +1,27 @@
 PATH
   remote: .
   specs:
-    waithook (0.3.3)
+    waithook (0.4.0)
       websocket (~> 1.2)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.5.2)
-      public_suffix (>= 2.0.2, < 4.0)
+    addressable (2.8.7)
+      public_suffix (>= 2.0.2, < 7.0)
     ansi (1.5.0)
-    builder (3.2.3)
-    excon (0.60.0)
-    minitest (5.11.3)
-    minitest-reporters (1.1.19)
+    builder (3.3.0)
+    excon (0.112.0)
+    minitest (5.25.1)
+    minitest-reporters (1.7.1)
       ansi
       builder
       minitest (>= 5.0)
       ruby-progressbar
-    public_suffix (3.0.2)
-    rake (12.3.0)
-    ruby-progressbar (1.9.0)
-    websocket (1.2.5)
+    public_suffix (6.0.1)
+    rake (13.2.1)
+    ruby-progressbar (1.13.0)
+    websocket (1.2.11)
 
 PLATFORMS
   ruby
@@ -34,4 +34,4 @@ DEPENDENCIES
   waithook!
 
 BUNDLED WITH
-   1.16.1
+   2.5.11

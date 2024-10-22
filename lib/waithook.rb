@@ -47,7 +47,7 @@ class Waithook
 
   # Filter (Proc), can be used to to filter incoming messages
   attr_accessor :filter
-  # Array of all recieved messages
+  # Array of all received messages
   attr_accessor :messages
   # Websocket client, instance of Waithook::WebsocketClient
   attr_reader :client
@@ -106,7 +106,21 @@ class Waithook
     raise "Waithook connection already started" if @started
     @started = true
     @client.connect!.wait_handshake!
+    start_pinger_thread!
+
     self
+  end
+
+  def start_pinger_thread!
+    Thread.new do
+      begin
+        logger.debug("Sending ping every 60 seconds")
+        client.ping_sender
+        logger.debug("Exit ping sender thread")
+      rescue => error
+        logger.warn("Error in ping sender thread: #{error.message} (#{error.class})\n#{error.backtrace.join("\n")}")
+      end
+    end
   end
 
   # Whenever connected to server or not
@@ -116,7 +130,7 @@ class Waithook
 
   # Send all incoming webhook requests to running HTTP server
   #
-  #   webhook = Waithook.subscribe(path: 'my-webhoooks').forward_to('http://localhost:3000/notification')
+  #   webhook = Waithook.subscribe(path: 'my-webhooks').forward_to('http://localhost:3000/notification')
   #
   def forward_to(url, options = {})
     webhook = wait_message(options)
@@ -132,7 +146,7 @@ class Waithook
     Timeout.timeout(timeout) do
       while true
         _, data = @client.wait_message
-        webhook = Webhook.new(data)
+        webhook = Webhook.new(data, logger)
         if @filter && @filter.call(webhook) || !@filter
           @messages << webhook
           return webhook
@@ -140,7 +154,7 @@ class Waithook
       end
     end
   rescue Timeout::Error => error
-    time_diff = (Time.now.to_f - start_time).round(3)
+    time_diff = (Time.now.to_f - start_time.to_i).round(3)
     logger.error "#{error.class}: #{error.message} (after #{time_diff} seconds)"
     raise error if raise_timeout_error
     return nil
@@ -166,13 +180,37 @@ class Waithook
     # Raw message from waithook server
     attr_reader :message
 
-    def initialize(payload)
+    def initialize(payload, logger = nil)
       @message = payload
       data = JSON.parse(@message)
       @url = data['url']
       @headers = data['headers']
       @body = data['body']
       @method = data['method']
+      @logger = logger
+    end
+
+    def pretty_print
+      if @body.start_with?('{') && @body.end_with?('}') || @body.start_with?('[') && @body.end_with?(']')
+        begin
+          body_data = JSON.parse(body)
+          pretty_body = JSON.pretty_generate(body_data)
+          data_without_body = JSON.parse(@message)
+          data_without_body.delete('body')
+
+          begin
+            require 'coderay'
+            pretty_body = CodeRay.scan(pretty_body, :json).term
+          rescue => error
+            logger&.debug("Error while trying to use CodeRay: #{error.message}")
+          end
+          return "#{JSON.pretty_generate(data_without_body)}\nBody:\n#{pretty_body}"
+        rescue JSON::ParserError => error
+          logger&.debug("Error while parsing json body: #{error.message}")
+        end
+      end
+
+      return message
     end
 
     # Returns Hash.
@@ -185,7 +223,7 @@ class Waithook
 
     # Send webhook information to other HTTP server
     #
-    #   webhook = Waithook.subscribe(path: 'my-webhoooks').wait_message
+    #   webhook = Waithook.subscribe(path: 'my-webhooks').wait_message
     #   webhook.send_to('http://localhost:3000/notification')
     #
     def send_to(url)
