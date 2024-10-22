@@ -221,6 +221,8 @@ class Waithook
       end
     end
 
+    SKIP_FORWARD_HEADERS = %w[host content-length connection accept-encoding accept content-encoding]
+
     # Send webhook information to other HTTP server
     #
     #   webhook = Waithook.subscribe(path: 'my-webhooks').wait_message
@@ -245,7 +247,9 @@ class Waithook
 
         request = http_klass.new(uri)
         headers.each do |key, value|
-          request[key] = value
+          if !SKIP_FORWARD_HEADERS.include?(key.to_s.downcase)
+            request[key] = value
+          end
         end
 
         if body
