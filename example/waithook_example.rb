@@ -1,7 +1,7 @@
-require_relative './waithook'
+require_relative '../lib/waithook'
 require 'excon'
 
-waithook = Waithook.subscribe('my-super-test', host: 'localhost', port: 3012)
+waithook = Waithook.subscribe(path: 'my-super-test', host: 'localhost', port: 3012)
 
 Excon.post('http://localhost:3012/my-super-test', body: Time.now.to_s)
 

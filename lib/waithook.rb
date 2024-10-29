@@ -118,7 +118,11 @@ class Waithook
         client.ping_sender
         logger.debug("Exit ping sender thread")
       rescue => error
-        logger.warn("Error in ping sender thread: #{error.message} (#{error.class})\n#{error.backtrace.join("\n")}")
+        if error.message == "closed stream" && !@client.socket_open?
+          logger.debug("Connection closed, stopping ping sender thread")
+        else
+          logger.warn("Error in ping sender thread: #{error.message} (#{error.class})\n#{error.backtrace.join("\n")}")
+        end
       end
     end
   end

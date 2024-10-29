@@ -79,7 +79,7 @@ class Waithook
       end
     end
 
-    # Estabilish connection to server and send initial handshake
+    # Establish connection to server and send initial handshake
     def connect!
       logger.info "Connecting to #{@host} #{@port}"
 
@@ -118,7 +118,7 @@ class Waithook
     def _start_parser!
       @reader, @writter = IO.pipe
       @processing_thread = Thread.new do
-        Thread.current.abort_on_exception = true
+        # Thread.current.abort_on_exception = true
         begin
           logger.debug "Start reading in thread"
           handshake_response = _wait_handshake_response
@@ -129,8 +129,14 @@ class Waithook
           _handshake_recieved!
           _wait_frames!
         rescue Object => error
+          # if got error - close socket and end thread
+          # @last_connection_error will be detected in #wait_message and raised to caller thread,
+          # so caller can decide to reconnect or do something else
+          @last_connection_error = error
+          close!(send_close: false, kill_processing_thread: false) rescue nil
+          @messages.close
+
           logger.error "#{error.class}: #{error.message}\n#{error.backtrace.join("\n")}"
-          raise error
         end
       end
     end
@@ -150,7 +156,7 @@ class Waithook
       _send_frame(:text, payload)
     end
 
-    # Wait for new message (thread safe, all waiting threads will recieve a message)
+    # Wait for new message (thread safe, all waiting threads will receive a message)
     # Message format [type, data], e.g. <tt>[:text, "hello world"]</tt>
     def wait_new_message
       waiter = Waiter.new
@@ -158,14 +164,27 @@ class Waithook
       waiter.wait
     end
 
-    # Synchroniously waiting for new message. Not thread safe, only one thread will receive message
+    # Synchronously waiting for new message. Not thread safe, only one thread will receive message
     # Message format [type, data], e.g. <tt>[:text, "hello world"]</tt>
     def wait_message
-      @messages.pop
+      begin
+        message = @messages.pop
+        if (!message || message.first == nil) && @messages.closed? && @last_connection_error
+          raise @last_connection_error
+        end
+
+        return message
+      rescue => error
+        if @last_connection_error
+          raise @last_connection_error
+        else
+          raise error
+        end
+      end
     end
 
     # Wait until server handshake recieved.
-    # Once it's recieved - we can are listening for new messages
+    # Once it's received - we can are listening for new messages
     # and connection is ready for sending data
     def wait_handshake!
       return true if @handshake_received
@@ -240,16 +259,20 @@ class Waithook
       data.join("")
     end
 
+    def socket_open?
+      @socket && !@socket.closed?
+    end
+
     # Send <tt>:close</tt> message to socket and close socket connection
-    def close!(options = {send_close: true})
+    def close!(send_close: true, kill_processing_thread: true)
       unless @is_open
         logger.info "Already closed"
         return false
       end
 
       logger.info "Disconnecting from #{@host} #{@port}"
-      @processing_thread.kill
-      _send_frame(:close) if options[:send_close]
+      @processing_thread.kill if kill_processing_thread
+      _send_frame(:close) if send_close
       @socket.close
       @is_open = false
 

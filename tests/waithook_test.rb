@@ -96,4 +96,20 @@ describe "Waithook" do
 
     assert_includes(out, "Timeout::Error: execution expired")
   end
+
+  it "should throw exception when got socket error" do
+    waithook = default_client(logger: true)
+    socket = waithook.client.instance_variable_get(:@socket)
+    socket.close
+
+    captured_error = nil
+    begin
+      waithook.wait_message(raise_on_timeout: false)
+    rescue => error
+      captured_error = error
+    end
+
+    assert_instance_of(IOError, captured_error)
+    assert_equal("stream closed in another thread", captured_error.message)
+  end
 end

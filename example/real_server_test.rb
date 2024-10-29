@@ -1,7 +1,7 @@
 require 'looksee'
 require 'excon'
 
-require './websocket-client'
+require_relative '../lib/waithook/websocket_client'
 
 #HOST = 'localhost'
 #PORT = 3012
