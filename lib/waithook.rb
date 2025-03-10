@@ -150,7 +150,11 @@ class Waithook
     Timeout.timeout(timeout) do
       while true
         _, data = @client.wait_message
-        webhook = Webhook.new(data, logger)
+        webhook = Webhook.new(
+          data,
+          logger: logger,
+          forward_options: (options[:forward_options] || {}).merge(@options[:forward_options] || {})
+        )
         if @filter && @filter.call(webhook) || !@filter
           @messages << webhook
           return webhook
@@ -184,7 +188,7 @@ class Waithook
     # Raw message from waithook server
     attr_reader :message
 
-    def initialize(payload, logger = nil)
+    def initialize(payload, logger: nil, forward_options: {})
       @message = payload
       data = JSON.parse(@message)
       @url = data['url']
@@ -192,9 +196,17 @@ class Waithook
       @body = data['body']
       @method = data['method']
       @logger = logger
+      @forward_options = forward_options
     end
 
-    def pretty_print
+    def pretty_print(pp_arg = nil, *args)
+      return super if pp_arg && defined?(super) # method from 'pp' library has same name
+
+      if !@body
+        @logger&.debug("Error: Waithook::Webhook has no @body")
+        return @message
+      end
+
       if @body.start_with?('{') && @body.end_with?('}') || @body.start_with?('[') && @body.end_with?(']')
         begin
           body_data = JSON.parse(body)
@@ -206,15 +218,15 @@ class Waithook
             require 'coderay'
             pretty_body = CodeRay.scan(pretty_body, :json).term
           rescue => error
-            logger&.debug("Error while trying to use CodeRay: #{error.message}")
+            @logger&.debug("Error while trying to use CodeRay: #{error.message}")
           end
           return "#{JSON.pretty_generate(data_without_body)}\nBody:\n#{pretty_body}"
         rescue JSON::ParserError => error
-          logger&.debug("Error while parsing json body: #{error.message}")
+          @logger&.debug("Error while parsing json body: #{error.message}")
         end
       end
 
-      return message
+      return @message
     end
 
     # Returns Hash.
@@ -236,7 +248,8 @@ class Waithook
       uri = URI.parse(url)
       response = nil
 
-      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+      http_options = {use_ssl: uri.scheme == 'https'}.merge(@forward_options || {})
+      Net::HTTP.start(uri.host, uri.port, http_options) do |http|
         http_klass = case method
           when "GET"    then Net::HTTP::Get
           when "POST"   then Net::HTTP::Post
@@ -267,3 +280,4 @@ class Waithook
     end
   end
 end
+

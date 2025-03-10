@@ -55,6 +55,20 @@ describe "Waithook" do
     assert_equal("POST", webhook.method)
   end
 
+  it "should use forward_options in request" do
+    waithook = default_client(forward_options: {write_timeout: :aaa, local_host: "--11"})
+
+    message = {'my_data' => true}
+
+    Excon.post("http://#{HOST}:#{PORT}/my-super-test", body: JSON.generate(message))
+
+    forward_error = begin
+      waithook.forward_to("http://#{HOST}:#{PORT}/my-super-test2")
+    rescue => e; e end
+    assert_equal(forward_error.class, Socket::ResolutionError)
+    assert_includes(forward_error.message, "getaddrinfo: nodename nor servname provided, or not known")
+  end
+
   it "should have trace log level" do
     out, err = capture_io do
       default_client(logger_level: :trace, logger: true)
