@@ -153,7 +153,8 @@ class Waithook
         webhook = Webhook.new(
           data,
           logger: logger,
-          forward_options: (options[:forward_options] || {}).merge(@options[:forward_options] || {})
+          forward_options: (options[:forward_options] || {}).merge(@options[:forward_options] || {}),
+          enable_colors: options.key?(:enable_colors) ? options.key?(:enable_colors) : true
         )
         if @filter && @filter.call(webhook) || !@filter
           @messages << webhook
@@ -188,7 +189,7 @@ class Waithook
     # Raw message from waithook server
     attr_reader :message
 
-    def initialize(payload, logger: nil, forward_options: {})
+    def initialize(payload, logger: nil, forward_options: {}, enable_colors: true)
       @message = payload
       data = JSON.parse(@message)
       @url = data['url']
@@ -197,6 +198,7 @@ class Waithook
       @method = data['method']
       @logger = logger
       @forward_options = forward_options
+      @enable_colors = enable_colors
     end
 
     def pretty_print(pp_arg = nil, *args)
@@ -214,11 +216,13 @@ class Waithook
           data_without_body = JSON.parse(@message)
           data_without_body.delete('body')
 
-          begin
-            require 'coderay'
-            pretty_body = CodeRay.scan(pretty_body, :json).term
-          rescue => error
-            @logger&.debug("Error while trying to use CodeRay: #{error.message}")
+          if @enable_colors
+            begin
+              require 'coderay'
+              pretty_body = CodeRay.scan(pretty_body, :json).term
+            rescue => error
+              @logger&.debug("Error while trying to use CodeRay: #{error.message}")
+            end
           end
           return "#{JSON.pretty_generate(data_without_body)}\nBody:\n#{pretty_body}"
         rescue JSON::ParserError => error

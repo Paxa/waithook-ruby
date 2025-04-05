@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    waithook (0.4.2)
+    waithook (0.4.4)
       websocket (~> 1.2)
 
 GEM
@@ -12,8 +12,10 @@ GEM
     ansi (1.5.0)
     builder (3.3.0)
     coderay (1.1.3)
-    excon (0.112.0)
-    minitest (5.25.1)
+    excon (1.2.5)
+      logger
+    logger (1.7.0)
+    minitest (5.25.5)
     minitest-reporters (1.7.1)
       ansi
       builder

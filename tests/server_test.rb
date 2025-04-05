@@ -71,9 +71,10 @@ describe "Server" do
 
     assert_includes(response.body, "<html lang='en'>")
     assert_equal({
-      "Connection"     => "close",
-      "Content-Length" => response.headers["Content-Length"],
-      "Content-Type"   => "text/html"
+      "Content-Encoding" => "", 
+      "Connection"       => "close",
+      "Content-Length"   => response.headers["Content-Length"],
+      "Content-Type"     => "text/html"
     }, response.headers)
   end
 
@@ -82,9 +83,10 @@ describe "Server" do
 
     assert_includes(response.body, "function")
     assert_equal({
-      "Connection"     => "close",
-      "Content-Length" => response.headers["Content-Length"],
-      "Content-Type"   => "application/javascript; charset=utf-8"
+      "Content-Encoding" => "", 
+      "Connection"       => "close",
+      "Content-Length"   => response.headers["Content-Length"],
+      "Content-Type"     => "application/javascript; charset=utf-8"
     }, response.headers)
   end
 
