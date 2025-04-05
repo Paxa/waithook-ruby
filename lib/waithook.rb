@@ -154,7 +154,7 @@ class Waithook
           data,
           logger: logger,
           forward_options: (options[:forward_options] || {}).merge(@options[:forward_options] || {}),
-          enable_colors: options.key?(:enable_colors) ? options.key?(:enable_colors) : true
+          enable_colors: @options.key?(:enable_colors) ? @options[:enable_colors] : true
         )
         if @filter && @filter.call(webhook) || !@filter
           @messages << webhook
